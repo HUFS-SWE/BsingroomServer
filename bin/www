@@ -47,17 +47,17 @@ server.on('listening', onListening);
 
  wsServer.on('connection',(socket)=>{
 
+  socket.on("fetchRoom", ()=>{
+    console.log(socket.rooms)
+    socket.emit('showRoomList',[...socket.rooms])
+  })
+
   socket.onAny((event)=>{
     console.log(event)
   });
-  socket.on('enterRoom',(roomName)=>{
-    socket.join(roomName)
-  })
 
-  socket.on('getRoomList',(clientId)=>{
-    const rooms = wsServer.sockets.adapter.rooms;
-    console.log(rooms);
-    socket.to(clientId).emit('showRoomList',"rooms")
+  socket.on('joinRoom',(roomName)=>{
+    socket.join(roomName)
   })
 
   socket.on('sendChat',(roomName,chat)=>{
