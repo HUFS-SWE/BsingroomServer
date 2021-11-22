@@ -8,6 +8,8 @@ var app = require('../app');
 var debug = require('debug')('bsingroomserver:server');
 var http = require('http');
 var SocketIO = require('socket.io')
+const { instrument } = require("@socket.io/admin-ui");
+
 /**
  * Get port from environment and store in Express.
  */
@@ -20,7 +22,17 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
-var wsServer = SocketIO(server);
+var wsServer = SocketIO(server,{
+  cors: {
+    origin: ["http://localhost:9000","http://localhost:3030","https://admin.socket.io" ],
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+instrument(wsServer, {
+  auth: false
+});
+
 /**
  * Listen on provided port, on all network interfaces.
  */
@@ -34,12 +46,20 @@ server.on('listening', onListening);
  */
 
  wsServer.on('connection',(socket)=>{
+
   socket.onAny((event)=>{
     console.log(event)
   });
-  socket.on('enterRoom',(roomName)=>
+  socket.on('enterRoom',(roomName)=>{
     socket.join(roomName)
-)
+  })
+
+  socket.on('getRoomList',(clientId)=>{
+    const rooms = wsServer.sockets.adapter.rooms;
+    console.log(rooms);
+    socket.to(clientId).emit('showRoomList',"rooms")
+  })
+
   socket.on('sendChat',(roomName,chat)=>{
     console.log(roomName, chat);
     socket.to(roomName).emit('showChat',chat);
