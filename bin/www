@@ -48,8 +48,7 @@ server.on('listening', onListening);
  wsServer.on('connection',(socket)=>{
 
   socket.on("fetchRoom", ()=>{
-    console.log(socket.rooms)
-    socket.emit('showRoomList',[...socket.rooms])
+    socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
   })
 
   socket.onAny((event)=>{
@@ -59,6 +58,12 @@ server.on('listening', onListening);
   socket.on('joinRoom',(roomName)=>{
     socket.join(roomName)
   })
+
+  wsServer.sockets.adapter.on("create-room", (room) => {
+    socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
+  });
+  
+  
 
   socket.on('sendChat',(roomName,chat)=>{
     console.log(roomName, chat);
