@@ -47,19 +47,25 @@ server.on('listening', onListening);
 
  wsServer.on('connection',(socket)=>{
 
+  socket.onAny((event)=>{
+    console.log(event)
+  });
+
+  //Room event
   socket.on("fetchRoom", ()=>{
     console.log(socket.rooms)
     socket.emit('showRoomList',[...socket.rooms])
   })
 
-  socket.onAny((event)=>{
-    console.log(event)
-  });
-
   socket.on('joinRoom',(roomName)=>{
     socket.join(roomName)
   })
 
+  socket.on('leaveRoom',(roomName)=>{
+    socket.leave(roomName)
+  })
+
+  //Chat event
   socket.on('sendChat',(roomName,chat)=>{
     console.log(roomName, chat);
     socket.to(roomName).emit('showChat',chat);
