@@ -53,19 +53,25 @@ server.on('listening', onListening);
 
   //Room event
   socket.on("fetchRoom", ()=>{
-    console.log(socket.rooms)
-    socket.emit('showRoomList',[...socket.rooms])
+    socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
   })
 
   socket.on('joinRoom',(roomName)=>{
     socket.join(roomName)
   })
 
+  wsServer.sockets.adapter.on("create-room", (room) => {
+    socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
+  });
+  
+
   socket.on('leaveRoom',(roomName)=>{
     socket.leave(roomName)
   })
 
   //Chat event
+  
+
   socket.on('sendChat',(roomName,chat)=>{
     console.log(roomName, chat);
     socket.to(roomName).emit('showChat',chat);
