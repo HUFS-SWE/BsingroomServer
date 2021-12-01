@@ -65,10 +65,8 @@ let arrNick = []
     socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
   })
 
-  socket.on('joinRoom',(roomName, nickname)=>{
+  socket.on('joinRoom',(roomName)=>{
     socket.join(roomName)
-    
-    // console.log(wsServer.sockets.connected)
   })
 
   wsServer.sockets.adapter.on("create-room", (room) => {
