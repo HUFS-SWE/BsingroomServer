@@ -45,7 +45,16 @@ server.on('listening', onListening);
  * socket Connection.
  */
 
+let arrNick = []
+
  wsServer.on('connection',(socket)=>{
+  wsServer.to(socket.id).emit('hello')
+
+  socket.on("getNickname",(nickname)=>{
+    arrNick.push({id:socket.id, nickname:nickname})
+    console.log(arrNick)
+  
+  })
 
   socket.onAny((event)=>{
     console.log(event)
