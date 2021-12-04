@@ -51,9 +51,9 @@ let arrNick = []
   wsServer.to(socket.id).emit('hello')
 
   socket.on("getNickname",(nickname)=>{
-    arrNick.push({id:socket.id, nickname:nickname})
+    arrNick[socket.id] = nickname
     console.log(arrNick)
-  
+
   })
 
   socket.onAny((event)=>{
@@ -63,6 +63,21 @@ let arrNick = []
   //Room event
   socket.on("fetchRoom", ()=>{
     socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
+  })
+
+  socket.on("fetchMember", (roomName)=>{
+    const clients = wsServer.sockets.adapter.rooms.get(roomName);
+    const clientList = [...clients]
+
+    let arr = [];
+    for(var i=0; i<clientList.length; ++i){
+      if (clientList[i])
+      var k = arrNick[clientList[i]]
+      arr.push(k) 
+    }
+    console.log(arr)
+    socket.emit('showMemberList', arr)
+    
   })
 
   socket.on('joinRoom',(roomName)=>{
@@ -76,6 +91,7 @@ let arrNick = []
 
   socket.on('leaveRoom',(roomName)=>{
     socket.leave(roomName)
+
   })
 
   //audio event
@@ -96,7 +112,7 @@ let arrNick = []
 
   socket.on('sendChat',(roomName,chat)=>{
     console.log(roomName, chat);
-    socket.to(roomName).emit('showChat',chat);
+    socket.emit('showChat',chat);
   })
 })
 
