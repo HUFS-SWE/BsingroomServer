@@ -10,6 +10,7 @@ var http = require('http');
 var SocketIO = require('socket.io')
 const { instrument } = require("@socket.io/admin-ui");
 const { set } = require('../app');
+const { SocketAddress } = require('net');
 
 /**
  * Get port from environment and store in Express.
@@ -51,7 +52,7 @@ const arrNick = new Set();
  wsServer.on('connection',(socket)=>{
 
   //All event
-  socket.onAny((event)=>{
+  socket.onAny((event)=>{   //모든 이벤트 감시
     console.log(event)
   });
 
@@ -77,11 +78,11 @@ const arrNick = new Set();
   })
 
   //Room event
-  socket.on("fetchRoom", ()=>{
+  socket.on("fetchRoom", ()=>{            //룸 리스트 업데이트
     socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
   })
 
-  socket.on("fetchMember", (roomName)=>{
+  socket.on("fetchMember", (roomName)=>{  //룸 접속 유저 업데이트
     const clients = wsServer.sockets.adapter.rooms.get(roomName);
     const clientList = [...clients]
 
@@ -94,27 +95,47 @@ const arrNick = new Set();
         })
       }
     console.log(arr);
-    socket.to(roomName).emit("showMemberList", arr);
-    wsServer.to(socket.id).emit("answerConnect", arr);
+    socket.to(roomName).emit("showMemberList", arr, false);
+    wsServer.to(socket.id).emit("showMemberList", arr, true);
   })
 
-  socket.on('joinRoom',(roomName)=>{
+  socket.on('joinRoom',(roomName)=>{      //룸 접속
     socket.join(roomName)
   })
 
-  wsServer.sockets.adapter.on("create-room", (room) => {
+  wsServer.sockets.adapter.on("create-room", (room) => {    //룸 생성 시
+    socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
+  });
+
+  wsServer.sockets.adapter.on("delete-room", (room) => {    //룸 제거 시
     socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
   });
   
 
-  socket.on('leaveRoom',(roomName, host)=>{
+  socket.on('leaveRoom',(roomName, host)=>{   //룸 나가기
     if(host){
       socket.to(roomName).emit("breakRoom")
     }
-    wsServer.to(socket.id).emit("peerDistroy")
-    socket.leave(roomName)
+    const clients = wsServer.sockets.adapter.rooms.get(roomName);
+    const clientList = [...clients]
 
+    let arr = [];
+    for(var i=0; i<clientList.length; ++i){
+        arrNick.forEach((client)=>{
+          if(client.id==clientList[i]&&client.id!=socket.id){
+            arr.push(client)
+          }
+        })
+      }
+    console.log(arr);
+    socket.to(roomName).emit("showMemberList", arr, false);
+    wsServer.to(socket.id).emit("showMemberList", arr, true);
+    setTimeout(() => {
+      socket.leave(roomName)
+    }, 100);
+    
   })
+  
 
   //audio event
   socket.on('offer',(offer, receiverID)=>{
@@ -131,7 +152,6 @@ const arrNick = new Set();
 
   //Chat event
   
-
   socket.on('sendChat',(roomName,chat)=>{
     console.log(roomName, chat);
     wsServer.to(roomName).emit('showChat',chat);
