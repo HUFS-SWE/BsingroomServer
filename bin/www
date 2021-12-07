@@ -75,9 +75,7 @@ let arrNick = []
       var k = arrNick[clientList[i]]
       arr.push(k) 
     }
-    console.log(arr)
-    socket.emit('showMemberList', arr)
-    
+    wsServer.to(roomName).emit('showMemberList', arr)
   })
 
   socket.on('joinRoom',(roomName)=>{
@@ -91,7 +89,7 @@ let arrNick = []
 
   socket.on('leaveRoom',(roomName)=>{
     socket.leave(roomName)
-
+    socket.emit('fetchMember', (roomName))
   })
 
   //audio event
@@ -111,8 +109,9 @@ let arrNick = []
   
 
   socket.on('sendChat',(roomName,chat)=>{
-    console.log(roomName, chat);
-    socket.emit('showChat',chat);
+    const nickname = arrNick[socket.id];
+    const content = nickname+': '+chat;
+    wsServer.to(roomName).emit('showChat', content);
   })
 })
 
