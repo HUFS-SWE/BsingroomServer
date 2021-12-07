@@ -9,6 +9,8 @@ var debug = require('debug')('bsingroomserver:server');
 var http = require('http');
 var SocketIO = require('socket.io')
 const { instrument } = require("@socket.io/admin-ui");
+const { set } = require('../app');
+const { SocketAddress } = require('net');
 
 /**
  * Get port from environment and store in Express.
@@ -45,72 +47,120 @@ server.on('listening', onListening);
  * socket Connection.
  */
 
-let arrNick = []
+const arrNick = new Set();
 
  wsServer.on('connection',(socket)=>{
-  wsServer.to(socket.id).emit('hello')
 
-  socket.on("getNickname",(nickname)=>{
-    arrNick[socket.id] = nickname
-    console.log(arrNick)
-
-  })
-
-  socket.onAny((event)=>{
+  //All event
+  socket.onAny((event)=>{   //모든 이벤트 감시
     console.log(event)
   });
 
+  //Socket connection event
+  socket.on("disconnect", () => {   //소켓 이탈 시 유저 삭제
+    arrNick.forEach((client)=>{
+      if (client.id==socket.id)
+      arrNick.delete(client)
+    })
+    console.log(arrNick)
+  });
+
+  socket.on("getNickname",(data)=>{   //소켓 접속 시 유저 추가
+    let defined = false;
+    arrNick.forEach((client)=>{
+      if(client.id==socket.id)
+      defined = true;
+    })
+    if(!defined){
+      arrNick.add({id : socket.id, nickname : data})
+    }
+    console.log(arrNick)
+  })
+
   //Room event
-  socket.on("fetchRoom", ()=>{
+  socket.on("fetchRoom", ()=>{            //룸 리스트 업데이트
     socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
   })
 
-  socket.on("fetchMember", (roomName)=>{
+  socket.on("fetchMember", (roomName)=>{  //룸 접속 유저 업데이트
     const clients = wsServer.sockets.adapter.rooms.get(roomName);
     const clientList = [...clients]
 
     let arr = [];
     for(var i=0; i<clientList.length; ++i){
-      if (clientList[i])
-      var k = arrNick[clientList[i]]
-      arr.push(k) 
-    }
-    wsServer.to(roomName).emit('showMemberList', arr)
+        arrNick.forEach((client)=>{
+          if(client.id==clientList[i]){
+            arr.push(client)
+          }
+        })
+      }
+    console.log(arr);
+    socket.to(roomName).emit("showMemberList", arr, false);
+    wsServer.to(socket.id).emit("showMemberList", arr, true);
   })
 
-  socket.on('joinRoom',(roomName)=>{
+  socket.on('joinRoom',(roomName)=>{      //룸 접속
     socket.join(roomName)
   })
 
-  wsServer.sockets.adapter.on("create-room", (room) => {
+  wsServer.sockets.adapter.on("create-room", (room) => {    //룸 생성 시
+    socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
+  });
+
+  wsServer.sockets.adapter.on("delete-room", (room) => {    //룸 제거 시
     socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
   });
   
 
-  socket.on('leaveRoom',(roomName)=>{
-    socket.leave(roomName)
-    socket.emit('fetchMember', (roomName))
+  socket.on('leaveRoom',(roomName, host)=>{   //룸 나가기
+    if(host){
+      socket.to(roomName).emit("breakRoom")
+    }
+    const clients = wsServer.sockets.adapter.rooms.get(roomName);
+    const clientList = [...clients]
+
+    let arr = [];
+    for(var i=0; i<clientList.length; ++i){
+        arrNick.forEach((client)=>{
+          if(client.id==clientList[i]&&client.id!=socket.id){
+            arr.push(client)
+          }
+        })
+      }
+    console.log(arr);
+    socket.to(roomName).emit("showMemberList", arr, false);
+    wsServer.to(socket.id).emit("showMemberList", arr, true);
+    setTimeout(() => {
+      socket.leave(roomName)
+    }, 100);
+    
   })
+  
 
   //audio event
-  socket.on('offer',(offer, roomName)=>{
-    socket.to(roomName).emit("offer",offer);
+  socket.on('offer',(offer, receiverID)=>{
+    wsServer.to(receiverID).emit("offer",offer,socket.id);
   })
 
-  socket.on("answer", (answer, roomName)=>{
-    socket.to(roomName).emit("answer",answer);
+  socket.on("answer", (answer, receiverID)=>{
+    wsServer.to(receiverID).emit("answer",answer, socket.id);
   })
 
-  socket.on("ice", (ice, roomName)=>{
-    socket.to(roomName).emit("ice",ice);
+  socket.on("ice", (ice, receiverID)=>{
+    wsServer.to(receiverID).emit("ice",ice, socket.id);
   })
 
   //Chat event
   
-
   socket.on('sendChat',(roomName,chat)=>{
-    const nickname = arrNick[socket.id];
+    let nickname = ''
+    arrNick.forEach((client)=>{
+      if (client.id==socket.id)
+      nickname = client.nickname
+    })
+    console.log(nickname)
     const content = nickname+': '+chat;
+    console.log(content)
     wsServer.to(roomName).emit('showChat', content);
   })
 })
