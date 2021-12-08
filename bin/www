@@ -176,6 +176,21 @@ const arrNick = new Set();
     console.log(content)
     wsServer.to(roomName).emit('showChat', content);
   })
+
+  //singRoom event
+  socket.on("createReserv", (roomName,senderID, title, url)=>{
+    wsServer.to(roomName).emit('showReservedSong',senderID, title, url);
+  })
+
+  socket.on("playSong", (roomName, data)=>{
+    wsServer.to(roomName).emit('playReservedSong', data);
+  })
+
+  socket.on("setStop",(roomName)=>{
+    wsServer.to(roomName).emit('setPlayingStop');
+  })
+ 
+
 })
 
 
