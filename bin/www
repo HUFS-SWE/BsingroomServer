@@ -65,21 +65,34 @@ const arrNick = new Set();
     console.log(arrNick)
   });
 
-  socket.on("getNickname",(data)=>{   //소켓 접속 시 유저 추가
+  socket.on("getNickname",(data, userIcon)=>{   //소켓 접속 시 유저 추가
     let defined = false;
     arrNick.forEach((client)=>{
       if(client.id==socket.id)
       defined = true;
     })
     if(!defined){
-      arrNick.add({id : socket.id, nickname : data})
+      arrNick.add({id : socket.id, nickname : data, icon : userIcon})
     }
     console.log(arrNick)
   })
 
   //Room event
   socket.on("fetchRoom", ()=>{            //룸 리스트 업데이트
-    socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
+    const rooms = wsServer.sockets.adapter.rooms.keys()
+    console.log('rooms', rooms)
+    let arr = []
+    for (const item of rooms) {
+      console.log('item', item)
+      var room = wsServer.sockets.adapter.rooms.get(item)
+      console.log('room', room)
+      let leng = Object.keys(room).length
+      console.log('leng', leng)
+      arr.push({item, leng})
+    }
+    console.log(arr)
+    console.log(Array.from(wsServer.sockets.adapter.rooms.keys()))
+    socket.emit('showRoomList', arr)
   })
 
   socket.on("fetchMember", (roomName)=>{  //룸 접속 유저 업데이트
