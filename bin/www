@@ -119,6 +119,8 @@ const arrNick = new Set();
   wsServer.sockets.adapter.on("create-room", () => {    //룸 생성 시
     //console.log('create')
     //socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
+    setTimeout(() => {
+      
     const rooms = wsServer.sockets.adapter.rooms.keys()
     console.log('rooms', rooms)
     let arr = []
@@ -133,24 +135,28 @@ const arrNick = new Set();
     console.log(arr)
     console.log(Array.from(wsServer.sockets.adapter.rooms.keys()))
     socket.emit('showRoomList', arr)
+    }, 500);
   });
 
   wsServer.sockets.adapter.on("delete-room", () => {    //룸 제거 시
     //socket.emit('showRoomList',Array.from(wsServer.sockets.adapter.rooms.keys()))
-    const rooms = wsServer.sockets.adapter.rooms.keys()
-    console.log('rooms', rooms)
-    let arr = []
-    for (const item of rooms) {
-      console.log('item', item)
-      var room = wsServer.sockets.adapter.rooms.get(item)
-      console.log('room', room)
-      let leng = room.size
-      console.log('leng', leng)
-      arr.push({item, leng})
-    }
-    console.log(arr)
-    console.log(Array.from(wsServer.sockets.adapter.rooms.keys()))
-    socket.emit('showRoomList', arr)
+    setTimeout(() => {
+      
+      const rooms = wsServer.sockets.adapter.rooms.keys()
+      console.log('rooms', rooms)
+      let arr = []
+      for (const item of rooms) {
+        console.log('item', item)
+        var room = wsServer.sockets.adapter.rooms.get(item)
+        console.log('room', room)
+        let leng = room.size
+        console.log('leng', leng)
+        arr.push({item, leng})
+      }
+      console.log(arr)
+      console.log(Array.from(wsServer.sockets.adapter.rooms.keys()))
+      socket.emit('showRoomList', arr)
+      }, 500);
   });
   
 
