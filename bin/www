@@ -165,8 +165,8 @@ const arrNick = new Set();
       socket.to(roomName).emit("breakRoom")
     }
     const clients = wsServer.sockets.adapter.rooms.get(roomName);
-    const clientList = [...clients]
-
+    let clientList = []
+    if(clients)clientList = [...clients]
     let arr = [];
     for(var i=0; i<clientList.length; ++i){
         arrNick.forEach((client)=>{
@@ -201,15 +201,11 @@ const arrNick = new Set();
   //Chat event
   
   socket.on('sendChat',(roomName,chat)=>{
-    let nickname = ''
     arrNick.forEach((client)=>{
-      if (client.id==socket.id)
-      nickname = client.nickname
+      if (client.id==socket.id){
+      wsServer.to(roomName).emit('showChat',{icon:client.icon, nickname:client.nickname, chat:chat, ID:client.id});
+      }
     })
-    console.log(nickname)
-    const content = nickname+': '+chat;
-    console.log(content)
-    wsServer.to(roomName).emit('showChat', content);
   })
 
   //singRoom event
